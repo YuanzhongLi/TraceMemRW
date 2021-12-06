@@ -1,2 +1,3 @@
 obj-intel64/
 pintool.log
+*.xz

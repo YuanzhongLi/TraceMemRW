@@ -16,12 +16,20 @@ PIN_LOCK pinLock;
 ADDRINT write_address;
 bool is_written = false;
 
+// #define FILE
+#define OUT
+
 VOID Read(THREADID tid, ADDRINT addr) {
     PIN_GetLock(&pinLock, 1);
     ADDRINT * addr_ptr = (ADDRINT*)addr;
     ADDRINT value;
     PIN_SafeCopy(&value, addr_ptr, sizeof(ADDRINT));
+#ifdef FILE
     fprintf(trace, "R %lx %lx\n", addr, value);
+#endif
+#ifdef OUT
+    printf("R %lx %lx\n", addr, value);
+#endif
     PIN_ReleaseLock(&pinLock);
 }
 
@@ -49,8 +57,12 @@ void WriteData(THREADID tid, ADDRINT addr) {
     ADDRINT * addr_ptr = (ADDRINT*)write_address;
     ADDRINT value;
     PIN_SafeCopy(&value, addr_ptr, sizeof(ADDRINT));
-
+#ifdef FILE
     fprintf(trace, "W %lx %lx\n", write_address, value);
+#endif
+#ifdef OUT
+    printf("W %lx %lx\n", write_address, value);
+#endif
     is_written = false;
   }
 
@@ -59,7 +71,12 @@ void WriteData(THREADID tid, ADDRINT addr) {
 
 VOID SyscallEntry(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID *v) {
     int syscall_number = PIN_GetSyscallNumber(ctxt, std);
+#ifdef FILE
     fprintf(trace, "S %d\n", syscall_number);
+#endif
+#ifdef OUT
+    printf("S %d\n", syscall_number);
+#endif
 }
 
 // VOID SyscallExit(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID *v) {
@@ -112,8 +129,13 @@ VOID Instruction(INS ins, VOID* v)
 
 VOID Fini(INT32 code, VOID* v)
 {
-    fprintf(trace, "#eof\n");
+#ifdef FILE
+    fprintf(trace, "#\n");
     fclose(trace);
+#endif
+#ifdef OUT
+    printf("#\n");
+#endif
 }
 
 /* ===================================================================== */
@@ -135,10 +157,12 @@ int main(int argc, char* argv[])
     if (PIN_Init(argc, argv)) return Usage();
 
     PIN_InitLock(&pinLock);
+#ifdef FILE
     trace = fopen("trace_rw.log", "w");
+#endif
 
     INS_AddInstrumentFunction(Instruction, 0);
-    PIN_AddSyscallEntryFunction(SyscallEntry, 0);
+    // PIN_AddSyscallEntryFunction(SyscallEntry, 0);
     // PIN_AddSyscallExitFunction(SyscallExit, 0);
     PIN_AddFiniFunction(Fini, 0);
 
